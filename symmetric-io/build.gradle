@@ -3,7 +3,7 @@ apply from: symAssembleDir + '/common.gradle'
     description = 'Data input/output libraries'
 
     dependencies {
-        api project(":symmetric-csv")
+        //api project(":symmetric-csv")
         api project(":symmetric-db")
         api "org.apache-extras.beanshell:bsh:$bshVersion"
         api "net.sourceforge.jeval:jeval:0.9.4"
