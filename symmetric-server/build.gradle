@@ -7,7 +7,23 @@ apply from: symAssembleDir + '/asciidoc.gradle'
 
     dependencies {
         api project(":symmetric-client")
-        compileOnly project(":symmetric-swagger-ui")
+        //compileOnly project(":symmetric-swagger-ui")
+        // region swagger-ui
+        //api project(":symmetric-core")
+        api "org.springframework:spring-context:$springVersion"
+        api "org.springframework:spring-webmvc:$springVersion"
+
+        api "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
+        api "com.google.guava:guava:$guavaVersion"
+        api ("io.springfox:springfox-swagger2:2.9.2") {
+            exclude group: "com.fasterxml.jackson.core"
+            exclude group: 'com.fasterxml.jackson.dataformat'
+            exclude group: 'com.fasterxml.jackson.databind'
+            exclude group: "com.google.guava"
+            exclude group: "com.fasterxml"
+        }
+        api 'io.springfox:springfox-swagger-ui:2.9.2'
+        //endregion
         api "org.springframework:spring-jms:$springVersion"
         api "org.springframework:spring-web:$springVersion"
         api "org.springframework:spring-webmvc:$springVersion"
