@@ -1,0 +1,81 @@
+=== Google BigQuery
+
+ifndef::pro[]
+NOTE: Support for Google BigQuery is available in https://www.jumpmind.com/products/symmetricds/symmetricds-overview[SymmetricDS Pro].
+endif::pro[]
+
+Use `symadmin module install bigquery` to install driver files, or copy your own files into the `lib` sub-directory.
+
+Send changes from your relational database to Google's BigQuery.  
+
+==== Setup
+
+BigQuery is only supported as a load only node in SymmetricDS.  See <<Load Only Node>> for details on setting up a load only node in SymmetricDS.
+
+ifdef::pro[]
+Setup the BigQuery node by using the <<Add Node,Connect Database>> wizard and selecting BigQuery as the type.  
+
+image::images/appendix/bigquery-database-settings.png[]
+
+After hitting next you can setup advanced options for your Snowflake node.
+
+endif::pro[]
+
+ifndef::pro[] 
+
+.Example properties to setup a Google BigQuery load only node
+----
+load.only=true
+
+target.db.url=bigquery\://cloud.google.com
+target.db.driver=google
+
+
+----
+
+endif::pro[]
+
+==== Loading Data
+
+
+
+ifndef::pro[] 
+===== Setup reload channels for bulk loading.
+
+Update any reload channels that will be used on the table triggers that will capture changes and send them to BigQuery by setting the column data_loader_type to 'bulk'.  It is also recommended to increase the batch size so that larger CSV files will be processed instead of the default size on reloads of 10,000 rows.
+
+
+.Example SQL to setup the main reload channel to use bulk and also update the batch sizes.
+[source, SQL]
+----
+update sym_channel set data_loader_type='bulk', max_batch_size=500000 where channel_id='reload'
+----
+endif::pro[]
+
+===== BigQuery Authentication
+
+Create a JSON credentials file through your BigQuery account
+
+https://cloud.google.com/docs/authentication/getting-started
+
+      
+ifdef::pro[]
+
+Provide this file path on the advanced settings while setting up a BigQuery node.  The advanced settings also requires that you provide a project ID and location for your BigQuery project.
+
+====
+NOTE: You will need to use your Google BigQuery dataset name in the target schema of the router that is used to route data to BigQuery.
+====
+
+image::images/appendix/bigquery-advanced-settings.png[]
+endif::pro[]
+ifndef::pro[] 
+[source, properties]
+----
+google.bigquery.project.id=<Google BigQuery Project ID>
+google.bigquery.security.credentials.path=<Local Path to JSON Credentials File>
+google.bigquery.location=<Google BigQuery Location: defaults to US>
+
+----
+endif::pro[]
+

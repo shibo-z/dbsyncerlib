@@ -1,0 +1,289 @@
+[appendix]
+== Data Model
+
+What follows is the complete SymmetricDS data model. Note that all tables are prepended with a configurable prefix 
+so that multiple instances of SymmetricDS may coexist in the same database. The default prefix is sym_.
+
+SymmetricDS configuration is entered by the user into the data model to control the behavior of what data is 
+synchronized to which nodes.
+
+.Configuration Data Model
+image::images/data-model-config.gif[]
+
+At runtime, the configuration is used to capture data changes and route them to nodes. The data changes are placed 
+together in a single unit called a batch that can be loaded by another node. Outgoing batches are delivered to nodes 
+and acknowledged. Incoming batches are received and loaded. History is recorded for batch status changes and statistics.
+
+.Runtime Data Model
+image::images/data-model-runtime.gif[]
+
+include::generated/schema.ad[]
+
+[appendix]
+== Parameter List
+
+There are two kinds of parameters that can be used to configure the behavior of SymmetricDS: Startup Parameters and Runtime Parameters . 
+Startup Parameters are required to be in a system property or a property file, while Runtime Parameters can also be found in the Parameter 
+table from the database. Parameters are re-queried from their source at a configured interval and can also be refreshed on demand by using the JMX API. 
+
+The following table shows the source of parameters and the hierarchy of precedence.
+
+.Parameter Discovery Precedence
+[cols="5,^1,3"]
+|===
+|Location|Required|Description
+
+|symmetric-default.properties  |Y   |Packaged inside symmetric-core jar file. This file has all the default settings along with descriptions.
+|conf/symmetric.properties     |N   |Changes to this file in the conf directory of a standalone install apply to all engines in the JVM.
+|symmetric-override.properties |N   |Changes to this file, provided by the end user in the JVM's classpath, apply to all engines in the JVM.
+|engines/*.properties          |N   |Properties for a specific engine or node that is hosted in a standalone install.
+|Java System Properties        |N   |Any SymmetricDS property can be passed in as a -D property to the runtime. It will take precedence over any properties file property.
+|Parameter table               |N   |A table which contains SymmetricDS parameters. Parameters can be targeted at a specific node group and even at a specific external id. These settings will take precedence over all of the above.
+|IParameterFilter              |N   |An extension point which allows parameters to be sourced from another location or customized. These settings will take precedence over all of the above.
+|===
+
+=== Startup Parameters
+
+Startup parameters are read once from properties files and apply only during start up. The following properties are used:
+
+include::generated/startup-parameters.ad[]
+
+=== Runtime Parameters
+
+Runtime parameters are read periodically from properties files or the database. The following properties are used:
+
+include::generated/runtime-parameters.ad[]
+
+=== Server Configuration
+
+Server configuration is read from conf/symmetric-server.conf for settings needed by the server before the parameter system has been initialized.
+
+include::generated/server-parameters.ad[]
+
+
+[appendix]
+== Database Notes
+
+This section describes specific settings and notes for using each supported database platform.
+
+include::appendix/databases.ad[]
+
+
+[appendix]
+== Data Format
+
+include::appendix/dataformat.ad[]
+
+[appendix]
+== Version Numbering
+include::appendix/versioning.ad[]
+
+[appendix]
+== Upgrading
+
+ifdef::pro[]
+The SymmetricDS Pro setup program is an executable JAR file that can 
+upgrade an existing installation to a newer version while preserving settings.
+Download the setup program from https://support.jumpmind.com/downloads[SymmetricDS Pro Downloads].
+Run the setup program the same way as <<Standalone Installation>>.
+It is recommended to run the upgrade in a lower environment first to become familiar with the
+procedure and identify any issues.
+For deployments with a large number of nodes, upgrade the registration server first, then roll out upgrades to client nodes.
+For a clustered deployment, stop all clustered nodes, upgrade one node and start it before proceeding to the other nodes.
+
+IMPORTANT: Stop SymmetricDS and close the SymmetricDS Pro Control Center before performing an upgrade. 
+
+[.float-group]
+--
+[.left.text-left]
+image::images/install/install1.png[]
+
+The first screen shows the SymmetricDS Pro software version.
+The setup program will ask a series of questions before writing files to disk.
+
+To begin selecting options, click *Next*.
+
+--
+
+[.float-group]
+--
+[.left.text-left]
+image::images/install/install2.png[]
+
+Carefully read the SymmetricDS Pro License Agreement.
+
+If you accept, select *I accept the terms of this license agreement* and click *Next*.
+
+--
+
+[.float-group]
+--
+[.left.text-left]
+image::images/upgrade/upgrade-1.png[]
+
+Specify *Upgrade existing software* to upgrade an existing version of SymmetricDS to a newer version.
+
+For installing a new copy of SymmetricDS for the first time, see <<Standalone Installation>>.
+
+Click *Next* to continue.
+
+--
+
+[.float-group]
+--
+[.left.text-left]
+image::images/upgrade/upgrade-2.png[]
+
+Provide the directory of the existing installation.
+The directory will be verified as a valid installation of SymmetricDS
+before advancing.
+
+Choose the directory path, then click *Next* to continue.
+
+--
+
+[.float-group]
+--
+[.left.text-left]
+image::images/install/install5.png[]
+
+Select the packages you want to upgrade and verify disk space requirements are met.
+By default, all packages are selected.
+Drivers for popular databases are included, but they can be unselected if you
+don't plan to use them.
+
+After selecting packages, click *Next*.
+
+--
+
+[.float-group]
+--
+[.left.text-left]
+image::images/install/install10.png[]
+
+Confirm your upgrade settings look correct.
+
+Click *Next* to begin upgrading and installing files.
+
+--
+
+[.float-group]
+--
+[.left.text-left]
+image::images/install/install11.png[]
+
+The packages you selected are upgraded or installed to disk.
+For some upgrades, it may add or adjust settings in the "conf" subdirectory to accommodate the new version.
+
+After it finishes, click *Next*.
+
+--
+
+[.float-group]
+--
+[.left.text-left]
+image::images/upgrade/upgrade-3.png[]
+
+During the finish step, it will upgrade the module system 
+(optional packages that were installed outside of the setup program) and perform any cleanup. 
+
+After it finishes, click *Next*.
+
+--
+
+[.float-group]
+--
+[.left.text-left]
+image::images/install/install13.png[]
+
+The upgrade is now complete.  Choose if you want to open the SymmetricDS Pro Control Center where
+you can view the server status and open a web console.
+
+Click *Done* to exit the setup program.
+
+--
+
+[.float-group]
+--
+[.left.text-left]
+image::images/install/install14.png[]
+
+From the SymmetricDS Pro Control Center, you can start the server again.
+On the first startup after an upgrade, the server will make any required alterations
+to its runtime tables in the database.
+
+Verify that the server is running, and then click *Open Web Console*.  
+
+--
+
+endif::pro[]
+
+ifndef::pro[]
+The upgrade process can either be a full upgrade of a new installation that copies in existing settings
+or an incremental upgrade of an existing installation that copies in new library files.
+A full upgrade is the cleanest method that ensures all new files are updated, while an incremental upgrade
+changes a minimal number of files.
+An incremental upgrade works best for patch releases and most minor releases.
+When SymmetricDS is started after a major or minor software update, it will alter its database tables with any changes needed
+for that release.
+
+=== Full Upgrade
+
+For major releases and clean upgrades, copy old settings into a new installation using the following steps:
+
+. Stop the old SymmetricDS.
+. Backup the old SymmetricDS folder by renaming it.
+. Unzip the SymmetricDS distribution. 
+. Copy old files from "engines" folder.  (These files contain database connection information and engine settings.)
+. Copy old files from "conf" folder.  (These files contain settings for ports, wrapper, and logging.)  Check to see if any new changes need merged.
+. Copy old files from "security" folder.  (These files contain keys for encryption.)
+. Restart SymmetricDS.
+  
+=== Incremental Upgrade
+ 
+For patch and minor releases, copy and replace the library folders of the installation using the following steps:
+
+. Stop the old SymmetricDS.
+. Backup the old "lib" and "web/WEB-INF/lib" folders by renaming them.
+. Unzip the SymmetricDS distribution to a temporary folder.
+. Copy the new "lib" and "web/WEB-INF/lib" folders into the old installation. 
+. Restart SymmetricDS.
+
+Most patch releases only change the JAR files named with "symmetric" in the "web/WEB-INF/lib" folder.
+
+endif::pro[]
+
+[appendix]
+== Server Migration
+
+The SymmetricDS installation can be moved from one server to another.
+If the hostname and/or port is changing, then update the sync_url recorded in <<NODE>> and let it sync to other nodes *before* migration,
+by using the following steps:
+
+* Stop the SymmetricDS service.
+* Edit the engine properties file and update the sync.url property to use the new hostname and/or port
+* Start the SymmetricDS service.
+* Verify that a batch on the "config" channel is synced to other nodes.
+
+To migrate to a new server, use the following steps:
+
+* Stop the SymmetricDS service.
+* Copy the SymmetricDS installation directory to the new server.
+** The contents of the "tmp" sub-directory do NOT need copied, which can speed up the migration.
+* In the database, clear the <<NODE_HOST>> and <<LOCK>> tables to avoid startup checks for the old host.
+* Install the service on the new server (See <<Running as a Service>>.)
+* Start the SymmetricDS service.
+
+IMPORTANT: If any files are excluded from the migration, be careful to at least copy the "security/keystore", "conf/sym_service.conf", and "bin/setenv" files that contain the encryption key and keystore password.
+
+If the registration server is moved, new nodes will need to use a registration.url property that references the sync.url of the new registration server.
+Optionally, the existing nodes can also be updated with the new registration.url, but they will continue to sync with nodes based on the sync_url
+recorded in <<NODE>>.
+
+[appendix]
+== Utilities
+
+include::appendix/dbcompare.ad[]
+include::appendix/dbimport.ad[]
+include::appendix/dbexport.ad[]
+include::appendix/dbfill.ad[]

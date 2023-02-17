@@ -1,0 +1,71 @@
+
+=== Sybase ASE
+
+Use `symadmin module install sybase` to install driver files, or copy your own files into the `lib` sub-directory.
+
+Sybase Adaptive Server Enterprise (ASE) was tested using the jConnect 7 JDBC driver. The jConnect 7 JDBC driver should be placed in the "lib" folder.
+
+----
+driver class : com.sybase.jdbc4.jdbc.SybDriver
+----
+
+SymmetricDS requires the "select into" database option be turned on for Sybase ASE.   Run the following command with the sa account on the master database while replacing
+the database value with your database name.
+
+----
+sp_dboption 'YOUR_DATABASE', 'select into', true
+----
+
+SymmetricDS requires that the meta data information be installed on each database that will be used in replication.  Sybase provides these metadata store procedures in a script that is packaged with the installation.  
+
+Without the metadata stored procedures installed above the following error will be produced by SymmetricDS
+
+IMPORTANT: Error while reading the database metadata: JZ0SJ: Metadata accessor information was not found on this database. Please install the required tables as mentioned in the jConnect documentation.
+
+.Set the classpath to contain the jconnect jar and the classes directory
+----
+export CLASSPATH=/opt/sybase/jConnect-7_0/classes/jconn4.jar:/opt/sybase/jConnect-7_0/classes
+----
+
+.Install appropriate script from the jconnect driver folder in your Sybase installation under the /sp directory
+----
+java  IsqlApp -U sa -P {SA_PASSWORD} -S jdbc:sybase:Tds:{HOSTNAME}:{PORT}/{DATABASE} -I sql_server{SYBASE VERSION}.sql -c go
+----
+
+
+
+Columns of type DATETIME are accurate to 1/300th of a second, which means that the last digit of the milliseconds portion will end with 
+0, 3, or 6. An incoming DATETIME synced from another database will also have its millisconds rounded to one of these digits (0 and 1 become 
+0; 2, 3, and 4 become 3; 5, 6, 7, and 8 become 6; 9 becomes 10). If DATETIME is used as the primary key or as one of the columns to detect 
+a conflict, then conflict resolution could fail unless the milliseconds are rounded in the same fashion on the source system.
+
+On ASE, each new trigger in a table for the same operation (insert, update, or delete) overwrites the previous one. No warning message 
+displays before the overwrite occurs. When SymmetricDS is installed and configured to synchronize a table, it will install triggers 
+that could overwrite already existing triggers on the database. New triggers created after SymmetricDS is installed will overwrite the 
+SymmetricDS triggers. Custom trigger text can be added to the SymmetricDS triggers by modifying CUSTOM_ON_INSERT_TEXT, CUSTOM_ON_UPDATE_TEXT, 
+and CUSTOM_ON_DELETE_TEXT on the TRIGGER table.
+
+SymmetricDS expects a row count to be returned for data manipulation statements, which is the default setting for most server.
+However, if the NOCOUNT option is ON or the "send doneinproc tokens" setting is 0 for Sybase, SymmetricDS will not behave correctly.
+The NOCOUNT setting can be checked with "select case when (512 & @@OPTIONS) = 512 then 'on' else 'off' end".
+The DONEINPROC setting can be checked with "sp_configure 'send doneinproc tokens'".
+The commands "sp_configure 'send doneinproc tokens', 1" and "SET NOCOUNT OFF" will enable row counts. 
+If you're unable to change NOCOUNT for the server, the "db.init.sql" parameter can be set to "SET NOCOUNT OFF" in the engine properties file.
+
+Connections are pooled and expected to be in the database context like a new connection, so avoid using the "USE database" 
+Transact-SQL statement in extension code.
+
+==== Permissions
+The SymmetricDS database user generally needs privileges for connecting and creating tables (including indexes), triggers, sequences, 
+and procedures (including packages and functions). In Sybase ASE, only the System Administrator can create or drop triggers on tables it does not own. The table owner can create or drop triggers freely on their tables. For change data capture, it is recommended that the application user who controls Sybase and SymmetricDS be the same, so that there will be no permissions errors with dropping or creating triggers. This means that all of the Sybase tables pertaining to and being used by SymmetricDS are owned by the same user, and that is the user who is assigned to SymmetricDS. If this is not possible, the SA user is the only other option, as users cannot be granted the permission to create or delete triggers on tables they do not own. Any outside users that will need to Insert, Update, Delete or read from a Sybase table that they do not own will need the following permissions for any tables they need access to:
+
+[source, SQL]
+grant ALL on <catalog.schema.tablename> to <user_name>
+go
+
+ALL is referring to the combination of INSERT, UPDATE, DELETE, SELECT, ALTER and REFERENCES. These can be done individually or as the ALL command demonstrated above.
+
+==== Bulk Loading
+
+SymmetricDS has bulk loading capability available for Sybase ASE, when registering a Sybase ASE database with SymmetricDS, bulk loading will be checked by default. SymmetricDS specifies data loader types on a channel by channel basis. Once you have your database registered, to utilize bulk loading versus straight JDBC insert, specify the Bulk Loader ("bulk") in the data_loader_type column of sym_channel table.
+

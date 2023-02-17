@@ -1,0 +1,387 @@
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
+import org.apache.tools.ant.filters.FixCrLfFilter
+import org.apache.tools.ant.filters.ReplaceTokens
+
+configurations {
+    sshAntTask
+}
+
+configurations.all {
+    resolutionStrategy.eachDependency { DependencyResolveDetails details ->
+        if (details.requested.group == 'org.ow2.asm') {
+            details.useVersion '7.2'
+            //details.useVersion '5.2'
+        }
+    }
+}
+
+dependencies {
+    sshAntTask 'org.apache.ant:ant-jsch:1.10.12', 'com.jcraft:jsch:0.1.55'
+}
+
+allprojects {
+
+    apply plugin: 'eclipse'
+    apply plugin: 'idea'
+
+    group = 'org.jumpmind.symmetric'
+         
+    repositories {
+        maven {
+            url "https://maven.jumpmind.com/repo"
+            metadataSources {
+                mavenPom()
+                artifact()
+            }
+        }
+
+        mavenCentral()
+        maven { url "https://maven.vaadin.com/vaadin-addons" }
+        maven { url 'https://plugins.gradle.org/m2' }
+        maven { url "https://packages.confluent.io/maven/" }
+        maven { url "https://repository.mulesoft.org/nexus/content/repositories/public/" }
+        maven { url "https://repo1.maven.org/maven2/" }
+    }
+        
+    ext {
+        majorMinorVersion = version.substring(0, version.indexOf(".", version.indexOf(".")+ 1))
+    }
+    
+}
+
+def ignoreDerivedResources(projectDescription, directories = ["build", "test-output"]) {
+  def count = directories.count { file(it).exists() }
+  if (count > 0) {
+    def filter = projectDescription
+      .appendNode("filteredResources")
+      .appendNode("filter")
+    filter.appendNode("id", System.currentTimeMillis().toString().trim())
+    filter.appendNode("type", "26")
+    filter.appendNode("name")
+    def matcher = filter.appendNode("matcher")
+    matcher.appendNode("id", "org.eclipse.ui.ide.orFilterMatcher")
+    def arguments = matcher.appendNode("arguments")
+    directories.each {
+      if (file(it).exists()) {
+        def dirMatcher = arguments.appendNode("matcher")
+        dirMatcher.appendNode("id", "org.eclipse.ui.ide.multiFilter")
+        dirMatcher.appendNode("arguments", "1.0-projectRelativePath-matches-false-false-${it}")
+      }
+    }
+  }
+}  
+
+subprojects { subproject ->
+
+    apply plugin: 'com.github.hierynomus.license'
+    apply plugin: 'java-library'
+    apply plugin: 'maven-publish'
+    apply plugin: 'jacoco'
+    apply plugin: 'signing'
+    
+    
+    jacoco {
+		toolVersion = "0.8.5"
+	}
+    
+    jacocoTestReport {
+		executionData(file("${project.buildDir}/jacoco/*.exec"))
+    	reports {
+    		xml.enabled true
+	        html.enabled true
+	        xml.destination file("${buildDir}/reports/jacoco.xml")
+	        html.destination file("${buildDir}/reports/jacoco.html")
+
+    	}    	
+	}
+    
+
+    
+    configurations { deployerJars }
+    configurations {
+    	testArtifacts.extendsFrom testImplementation
+    }
+
+    configurations {
+    	provided {
+    		canBeResolved = true
+        	canBeConsumed = true
+        	visible = false
+        	transitive = true
+        	allDependencies.all {
+				dep -> configurations.default.exclude(group: dep.group, module: dep.name)
+			}
+        }
+        api.extendsFrom(provided)
+		// Ensure only the compile configuration is exported
+		project.idea.module {
+			// IDEA internally deals with 4 scopes : COMPILE, TEST, PROVIDED, RUNTIME
+			// but only PROVIDED seems to be picked up
+			scopes.PROVIDED.plus += [project.configurations.provided]
+		}
+    }
+
+    sourceCompatibility=1.8
+    targetCompatibility=1.8
+    
+    compileJava {
+    	options.compilerArgs += '-Xlint:deprecation'
+    }
+    
+    compileTestJava {
+    	options.compilerArgs += '-Xlint:deprecation'
+    }
+	
+    
+    eclipse {   
+        classpath {
+            downloadSources = true
+            downloadJavadoc = false
+	        
+	        file {
+	        	whenMerged { classpath ->
+			        def list = classpath.getEntries()
+			        list.removeAll { it.kind=='lib' && it.path.contains('javax.validation') && it.path.contains('validation-api') }
+			        classpath.setEntries(list)
+			    }
+	        }
+	        containsTestFixtures = true
+        }
+        
+        jdt {
+            sourceCompatibility = 1.8
+            targetCompatibility = 1.8
+        }
+        
+        project.file.whenMerged { project ->
+            project.natures.remove('org.springsource.ide.eclipse.gradle.core.nature')
+            project.natures.remove('org.eclipse.buildship.core.gradleprojectnature')            
+        }
+    }
+
+    idea {
+        module {
+            testResourceDirs = []
+            testSourceDirs = [ file('src/test/java'), file('src/test/groovy')]
+            resourceDirs += file('src/test/resources')
+            downloadJavadoc = true
+            downloadSources = true
+        }
+    }   
+    
+    javadoc {
+        failOnError = false
+    }
+    
+    afterEvaluate {
+        if(plugins.hasPlugin(JavaPlugin)) {
+            
+            // configuration here
+            rootProject.tasks.generateJavadoc {
+                source += files(sourceSets.collect { srcSet -> srcSet.allJava })
+                classpath += files(sourceSets*.compileClasspath)
+            }
+    
+        }
+    }    
+    
+    publish.enabled = !project.properties.containsKey('pro')
+    
+    
+    task sourcesJar(type: Jar, dependsOn:classes) {
+        classifier = 'sources'
+        from sourceSets.main.allSource
+    }
+    
+    artifacts { archives sourcesJar }    
+    
+    if (!project.name.contains("log-miner")) {
+        publishing {
+	    	publications {
+	        	symmetricLibrary(MavenPublication) {
+	            	from components.java
+	        	}
+	    	}
+	    	repositories {
+	        	maven {
+	        		name = "jumpmindMaven"
+		    		credentials {
+		                username deployUser
+		                password deployPassword
+		            }
+	            	url = deployUploadUrl
+	        	}
+	    	}
+		}
+		
+		signing {
+			sign publishing.publications.symmetricLibrary
+		}
+    }
+
+    task deploy {
+        description 'Shortcut for Maven users'
+        dependsOn tasks.publish
+    }
+
+    task testJar(type: Jar) {
+        classifier "test"
+        from sourceSets.test.output
+    }
+    
+    test {
+        ignoreFailures true
+        minHeapSize = "128m"
+        maxHeapSize = "512m"
+        useJUnitPlatform {
+            excludeTags("integration")
+        }
+        finalizedBy jacocoTestReport
+    }
+
+    def integrationTest = tasks.register("integrationTest", Test) {
+        ignoreFailures true
+        minHeapSize = "128m"
+        maxHeapSize = "512m"
+        forkEvery=1
+        if (System.getProperty("test.root") != null) systemProperty "test.root", System.getProperty("test.root")
+        if (System.getProperty("test.server") != null) systemProperty "test.server", System.getProperty("test.server")
+        if (System.getProperty("test.client") != null) systemProperty "test.client", System.getProperty("test.client")
+        if (System.getProperty("port.number") != null) systemProperty "port.number", System.getProperty("port.number")
+        useJUnitPlatform {
+            includeTags("integration")
+        }
+        finalizedBy jacocoTestReport
+    }
+        
+    jar {
+        manifest {
+            attributes("Implementation-Title": project.name,
+                       "Implementation-Version": archiveVersion,
+                       "Project-Artifact": project.name,                       
+                       "Build-Version": archiveVersion,
+                       "Build-Time": new SimpleDateFormat("yyyyMMdd-HHmm").format(new Date()),
+                       "Build-Scm-Version": scmVersion)
+        }    
+    }
+    
+
+
+    artifacts { testArtifacts testJar }
+
+    ext {
+        bshVersion = '2.0b6'
+        commonsBeanUtilsVersion = '1.9.4'
+        commonsCliVersion = '1.5.0'
+        commonsDbcpVersion = '2.9.0'
+        commonsFileuploadVersion = '1.4'
+        commonsIoVersion = '2.11.0'
+        commonsLangVersion = '3.12.0'
+        commonsTextVersion = '1.10.0'
+        commonsCodecVersion = '1.15'
+        commonsCollectionVersion = '4.4'
+        commonsVfs = '2.9.0'
+        hamcrestVersion = '1.3'
+        h2Version = '1.3.176'
+        derbyVersion = '10.14.2.0'
+        postgresqlVersion =  '42.5.1'
+        hsqldbVersion = '2.5.1'
+        sqliteVersion = '3.34.0'
+        javaMailVersion = '1.6.2'
+        jdomVersion = '2.0.6.1'
+        jaxbVersion = '2.3.1'
+        gsonVersion = '2.9.0'
+        jacksonVersion = '2.13.2.2'
+        guavaVersion = '31.1-android'
+        junitVersion = '5.8.2'
+        spotBugsVersion = '4.6.0'
+        log4jVersion = '2.17.2'
+        slf4jVersion = '1.7.36'
+        mockitoVersion = '4.4.0'
+        powerMockVersion = '2.0.9'
+        mysqlVersion = '8.0.28'
+        servletVersion = '4.0.1'
+        springVersion = '5.3.20'
+        jtdsVersion = '1.3.1'
+        bouncyCastleVersion = '1.70'
+        animalSnifferVersion = '1.21'
+        jnaVersion = '5.11.0'
+        jettyVersion = '9.4.49.v20220914'
+        alpnBootVersion = '8.1.13.v20181017'
+        alpnApiVersion = '1.1.3.v20160715'
+        websocketVersion = '1.1'
+        env = System.getenv()
+    }
+
+    dependencies {
+        api "org.apache.logging.log4j:log4j-core:$log4jVersion"
+        api "org.apache.logging.log4j:log4j-api:$log4jVersion"
+        api "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
+        api "org.apache.logging.log4j:log4j-web:$log4jVersion"
+        api "org.slf4j:slf4j-api:$slf4jVersion"
+        api "org.slf4j:jul-to-slf4j:$slf4jVersion"
+        api "org.slf4j:jcl-over-slf4j:$slf4jVersion"
+        compileOnly "com.github.spotbugs:spotbugs-annotations:$spotBugsVersion"
+
+        testImplementation fileTree(dir: System.getProperty("user.home") + '/.symmetricds/lib', include: '*.jar')
+        testImplementation "org.junit.jupiter:junit-jupiter-api:$junitVersion"
+        testImplementation "org.junit.jupiter:junit-jupiter-engine:$junitVersion"
+        
+        testImplementation "org.hamcrest:hamcrest-all:$hamcrestVersion"
+        testImplementation "org.mockito:mockito-core:$mockitoVersion"
+        testImplementation "org.powermock:powermock-api-mockito2:$powerMockVersion"
+        testImplementation "org.powermock:powermock-module-junit4:$powerMockVersion"
+        
+        deployerJars "org.apache.maven.wagon:wagon-ssh:3.5.1"  
+        
+        testImplementation "org.junit.jupiter:junit-jupiter-api:5.8.2"
+		testImplementation "org.junit.jupiter:junit-jupiter-engine:5.8.2"
+		testImplementation "org.junit.jupiter:junit-jupiter-params:5.8.2"
+    }    
+
+    task develop {
+        dependsOn tasks.cleanEclipse, tasks.eclipse, tasks.cleanIdea, tasks.idea, tasks.compileTestJava
+        
+        doLast {
+            def wstFacetXml = "$projectDir/.settings/org.eclipse.wst.common.project.facet.core.xml"
+            println "Deleting $wstFacetXml"
+            delete wstFacetXml 
+        }
+    }
+
+    downloadLicenses {
+        ext.gplTwo = license('GNU General Public License, Version 2', 'http://www.gnu.org/licenses/old-licenses/gpl-2.0.html')
+        ext.gplTwoCE = license('GNU General Public License with Classpath Exception, Version 2', 'http://www.gnu.org/licenses/old-licenses/gpl-2.0.html')
+        ext.lgpl = license('GNU Lesser General Public License', 'https://opensource.org/licenses/lgpl-license')
+        ext.apacheTwo = license('Apache License, Version 2.0', 'http://opensource.org/licenses/Apache-2.0')
+        ext.bsd = license('BSD License', 'http://www.opensource.org/licenses/bsd-license.php')
+        ext.eclipse = license('Eclipse Public License, Version 1.0', 'http://www.eclipse.org/legal/epl-v10.html')
+        ext.mit = license('MIT License', 'https://opensource.org/licenses/MIT')
+        ext.cddl = license('Common Development and Distribution License (CDDL)', 'https://opensource.org/licenses/CDDL-1.0')
+        ext.w3c = license('W3C Software License', 'http://www.w3.org/Consortium/Legal/copyright-software-19980720')
+    
+        includeProjectDependencies = true
+    
+        licenses = [
+            (group('org.jumpmind.symmetric')) : license('JumpMind License'),
+            (group('com.jumpmind.symmetric')) : license('JumpMind License'),
+            'com.byteowls:vaadin-chartjs:1.2.0' : mit,
+        ]
+    
+        aliases = [
+            (gplTwo) : ['The GNU General Public License, Version 2'],
+            (gplTwoCE) : ['GPL2 w/ CPE', 'GPL v2 with ClassPath Exception', 'GNU General Public License, version 2 (GPL2), with the classpath exception'],
+            (lgpl) : ['GNU Library or Lesser General Public License (LGPL) V2.1', 'LGPL, version 2.1', 'LGPL'],
+            (apacheTwo) : ['The Apache Software License, Version 2.0', 'Apache 2', 'Apache License Version 2.0', 'Apache License, Version 2.0', 'Apache License 2.0', 'Apache Software License - Version 2.0', 'The Apache License, Version 2.0', 'Apache License v2.0', 'Apache 2.0', 'Apache-2.0', 'Similar to Apache License but with the acknowledgment clause removed', 'GWT Terms'],
+            (bsd) : ['BSD License', 'BSD', 'BSD style', 'BSD 3-clause License w/nuclear disclaimer', 'BSD-2-Clause', 'BSD 3-Clause'],
+            (eclipse) : ['Eclipse Public License, Version 1.0', 'Eclipse Public License - Version 1.0', 'The H2 License, Version 1.0'],
+            (mit) : ['MIT License', 'The MIT License', 'The MIT License (MIT)', 'Bouncy Castle Licence', 'MIT'],
+            (cddl) : ['CDDL', 'Common Development and Distribution License (CDDL) v1.0', 'CDDL 1.1', 'Dual license consisting of the CDDL v1.1 and GPL v2', 'CDDL/GPLv2+CE', 'CDDL + GPLv2 with classpath exception'],
+            (w3c) : ['The W3C Software License', 'W3C Software Copyright Notice and License']
+        ]
+    
+        dependencyConfiguration = 'api'
+    }    
+}

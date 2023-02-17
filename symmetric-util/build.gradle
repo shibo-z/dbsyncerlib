@@ -1,0 +1,43 @@
+apply from: symAssembleDir + '/common.gradle'
+
+    description = 'Utility classes that are used by several Symmetric libraries'
+
+    dependencies {
+        api "org.apache.commons:commons-lang3:$commonsLangVersion"
+        api "org.apache.commons:commons-text:$commonsTextVersion"
+        api "commons-io:commons-io:$commonsIoVersion"
+        api "commons-codec:commons-codec:$commonsCodecVersion"
+        api "org.apache.commons:commons-collections4:$commonsCollectionVersion"
+        api "com.google.code.gson:gson:$gsonVersion"
+        compileOnly "org.bouncycastle:bcprov-jdk15on:$bouncyCastleVersion"
+        compileOnly "org.bouncycastle:bcpkix-jdk15on:$bouncyCastleVersion"
+        compileOnly "org.codehaus.mojo:animal-sniffer-annotations:$animalSnifferVersion"
+        compileOnly ("com.azure:azure-security-keyvault-secrets:4.4.3") {
+            exclude group: "com.google.guava"
+            exclude group: "com.azure", module: "azure-core-http-netty"
+            exclude group: "io.netty", module: "netty-tcnative-boringssl-static"
+        }
+        compileOnly ("com.azure:azure-security-keyvault-keys:4.4.3") {
+            exclude group: "com.google.guava"
+            exclude group: "com.azure", module: "azure-core-http-netty"
+            exclude group: "io.netty", module: "netty-tcnative-boringssl-static"
+        }
+        compileOnly ("com.azure:azure-security-keyvault-certificates:4.3.3") {
+            exclude group: "com.google.guava"
+            exclude group: "com.azure", module: "azure-core-http-netty"
+            exclude group: "io.netty", module: "netty-tcnative-boringssl-static"
+        }
+        compileOnly ("com.azure:azure-security-keyvault-jca:2.7.0") {
+            exclude group: "com.google.guava"
+            exclude group: "com.azure", module: "azure-core-http-netty"
+            exclude group: "io.netty", module: "netty-tcnative-boringssl-static"
+        }
+        compileOnly ("com.azure:azure-identity:1.5.3") {
+            exclude group: "com.google.guava"
+            exclude group: "com.azure", module: "azure-core-http-netty"
+            exclude group: "io.netty", module: "netty-tcnative-boringssl-static"
+        }
+        compileOnly ("com.azure:azure-core-http-okhttp:1.11.0") {
+            exclude group: "com.azure", module: "azure-core"
+        }
+    }

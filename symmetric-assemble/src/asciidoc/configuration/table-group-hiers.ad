@@ -1,0 +1,37 @@
+
+=== Table Group Hierarchies
+Table group hierarchies define the tables that belong to a table group and their relationships to each other,
+with each hierarchy representing a single table. Each table group hierarchy can have a parent, but it is not
+necessary for every hierarchy to have a parent. It is possible to configure multiple table group hierarchies
+for a single table if the table has multiple parents.
+
+ifdef::pro[]
+image::images/table-group-hier.png[]
+endif::pro[]
+
+ifdef::pro[]
+.Required Fields
+endif::pro[]
+
+ID:: Unique identifier for the table group hierarchy.
+Table Group ID:: Unique identifier for the table group associated with this table in the hierarchy.
+Source Catalog:: Optional name for the catalog the configured table is in.
+Source Schema:: Optional name for the schema the configured table is in.
+Source Table:: The name of the source table that will be a part of this table group.
+Parent ID:: Unique identifier for the parent of this table in the hierarchy.
+Relation Type:: When writer type is non-default, this defines the structure of data in hierarchy when writing output: O=object, A=array.
+
+[cols="<2,<7", options="header"]
+|===
+|Type
+|Description
+
+|Object|The data will be in the form of a single object containing one key/value pair for each column in the source table.
+
+|Array|The data will be in the form of an array of objects with each object containing one key/value pair for each column in the source table.
+
+|===
+
+Primary Column Names:: The primary key column names on this table that uniquely identify a row, comma-separated.
+Local Column Names:: The local column names on this table that reference a parent table, comma-separated.
+Parent Column Names:: The parent column names on the parent that join with local columns, comma-separated.

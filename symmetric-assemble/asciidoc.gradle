@@ -1,0 +1,277 @@
+apply plugin: 'org.asciidoctor.jvm.convert'
+
+configurations{ 
+	generateAppendixesDependencies
+	generateReleaseNotesDependencies	
+}
+
+dependencies {
+    generateAppendixesDependencies project(":symmetric-util")
+    generateAppendixesDependencies project(":symmetric-db")
+    generateReleaseNotesDependencies project(":symmetric-util")
+    generateReleaseNotesDependencies project(":symmetric-db")
+}
+
+def downloadURLCore = 'http://maven.jumpmind.com/repo/org/jumpmind/symmetric/symmetric-core/%s/symmetric-core-%s.jar'
+def downloadURLPro = 'http://maven.jumpmind.com/repo/org/jumpmind/symmetric/symmetric-pro/%s/symmetric-pro-%s.jar'
+
+task downloadJars {
+	doFirst{
+		println("Downloading jars for docs...")
+		def previousURL = String.format(downloadURLCore, latestPreviousVersion, latestPreviousVersion)
+		new File(symAssembleDir + '/build/docJars').mkdirs()
+		def out = new BufferedOutputStream(new FileOutputStream(symAssembleDir + '/build/docJars/download-core-' + latestPreviousVersion + '.zip'))
+		out << new URL(previousURL).openStream()
+		out.close()
+		
+		def formattedURL = String.format(downloadURLPro, latestPreviousVersion, latestPreviousVersion)
+		out = new BufferedOutputStream(new FileOutputStream(symAssembleDir + '/build/docJars/download-pro-' + latestPreviousVersion + '.zip'))
+		out << new URL(formattedURL).openStream()
+		out.close()
+	}
+}
+
+task unzipCoreJar(type: Copy) {
+	dependsOn downloadJars
+		def zipFile1 = file(symAssembleDir + '/build/docJars/download-core-' + latestPreviousVersion + '.zip')
+		def outputDir1 = file(symAssembleDir + '/build/docJars/core-' + latestPreviousVersion)
+		from zipTree(zipFile1)
+		into outputDir1	
+}
+
+task unzipProJar(type: Copy) {
+	dependsOn unzipCoreJar
+		def zipFile2 = file(symAssembleDir + '/build/docJars/download-pro-' + latestPreviousVersion + '.zip')
+		def outputDir2 = file(symAssembleDir + '/build/docJars/pro-' + latestPreviousVersion)
+		from zipTree(zipFile2)
+		into outputDir2
+}
+
+
+task generateReleaseNotes {
+	dependsOn unzipProJar
+	dependsOn project(":symmetric-util").jar
+	dependsOn project(":symmetric-db").jar
+	doFirst{
+		javaexec {
+			mainClass = 'org.jumpmind.db.io.ReleaseNotesGenerator'
+			classpath = configurations.generateReleaseNotesDependencies
+			args = [
+				symAssembleDir + '/build/docJars/core-' + latestPreviousVersion + "/symmetric-default.properties",
+				symAssembleDir + '/build/docJars/core-' + latestPreviousVersion + "/symmetric-schema.xml",
+				symAssembleDir + '/build/docJars/pro-' + latestPreviousVersion + "/symmetric-console-default.properties",
+				symAssembleDir + '/build/docJars/pro-' + latestPreviousVersion + "/console-schema.xml",
+				symAssembleDir + '/src/asciidoc/generated/release-notes.ad',
+				'https://www.symmetricds.org/api/get-issues.php?version=' + version.substring(0, version.lastIndexOf(".")) + '&secret=' + restAPISecret
+			]
+		}
+	}
+}
+
+task generateAppendixes {
+    dependsOn project(":symmetric-db").jar
+    doLast{
+        javaexec {
+            mainClass = 'org.jumpmind.properties.DefaultParameterParser'
+            classpath = configurations.generateAppendixesDependencies
+            args = [
+                symAssembleDir + '/../symmetric-server/src/main/deploy/conf/symmetric-server.properties',
+                symAssembleDir + '/src/asciidoc/generated/server-parameters.ad',
+                'false',
+                'asciidoc'
+            ]
+        }
+
+        if (project.properties.containsKey('pro')) {
+        	javaexec {
+        		mainClass = 'org.jumpmind.properties.DefaultParameterParser'
+        		classpath = configurations.generateAppendixesDependencies
+        		args = [
+					symAssembleDir + '/../symmetric-core/src/main/resources/symmetric-default.properties,' + symAssembleDir + '/../../symmetric-pro/symmetric-pro/src/main/resources/symmetric-console-default.properties',
+					symAssembleDir + '/src/asciidoc/generated/startup-parameters.ad',
+					'false',
+					'asciidoc'        		
+        		]
+        	}
+        	
+        	javaexec {
+        		mainClass = 'org.jumpmind.properties.DefaultParameterParser'
+        		classpath = configurations.generateAppendixesDependencies
+        		args = [
+					symAssembleDir + '/../symmetric-core/src/main/resources/symmetric-default.properties,' + symAssembleDir + '/../../symmetric-pro/symmetric-pro/src/main/resources/symmetric-console-default.properties',
+					symAssembleDir + '/src/asciidoc/generated/runtime-parameters.ad',
+					'true',
+					'asciidoc'        		
+        		]
+        	}
+        	
+	        javaexec {
+	            mainClass = 'org.jumpmind.db.io.DatabaseXmlAsciiDocBuilder'
+	            classpath = configurations.generateAppendixesDependencies
+	            args = [
+	                symAssembleDir + '/../symmetric-core/src/main/resources/symmetric-schema.xml,' + symAssembleDir + '/../../symmetric-pro/symmetric-pro/src/main/resources/console-schema.xml',
+	                symAssembleDir + '/src/asciidoc/generated/schema.ad'
+	            ]
+	        }
+        } else {
+        	javaexec {
+            	mainClass = 'org.jumpmind.properties.DefaultParameterParser'
+            	classpath = configurations.generateAppendixesDependencies
+            	args = [
+                	symAssembleDir + '/../symmetric-core/src/main/resources/symmetric-default.properties',
+               		symAssembleDir + '/src/asciidoc/generated/startup-parameters.ad',
+                	'false',
+                	'asciidoc'
+            	]
+        	}
+
+        	javaexec {
+            	mainClass = 'org.jumpmind.properties.DefaultParameterParser'
+            	classpath = configurations.generateAppendixesDependencies
+            	args = [
+             	    symAssembleDir + '/../symmetric-core/src/main/resources/symmetric-default.properties',
+             	    symAssembleDir + '/src/asciidoc/generated/runtime-parameters.ad',
+             	    'true',
+            	    'asciidoc'
+           	 	]
+       		}
+       		
+	        javaexec {
+	            mainClass = 'org.jumpmind.db.io.DatabaseXmlAsciiDocBuilder'
+	            classpath = configurations.generateAppendixesDependencies
+	            args = [
+	                symAssembleDir + '/../symmetric-core/src/main/resources/symmetric-schema.xml',
+	                symAssembleDir + '/src/asciidoc/generated/schema.ad'
+	            ]
+	        }
+        }
+
+    }
+}
+
+ext.getDocDir = {
+    return file("$buildDir/doc")
+}
+
+task cleanDocs {
+    dependsOn asciidoctor
+    def destinationDir = getDocDir()
+    doFirst {
+        println "Deleting $destinationDir.path"
+        delete destinationDir
+    }
+}
+
+task generateDocs(type: Copy) {
+    
+    dependsOn cleanDocs
+	group = 'SymmetricDS'
+	description = 'Generates user manual and documentation'
+    
+    destinationDir = getDocDir()
+
+	into('html') {
+		from ("$buildDir/src/asciidoc/html5/generated") { include "release-notes.html" }
+        filter(org.apache.tools.ant.filters.ReplaceTokens, tokens: [
+            'appVersion': version,
+            'appMajorVersion': version.substring(0, version.lastIndexOf(".")),
+            'buildTime': new java.text.SimpleDateFormat('yyyy-MM-dd HH:mm:ss').format(new java.util.Date()),
+            'buildYear': new java.text.SimpleDateFormat('yyyy').format(new java.util.Date()),
+            'scmVersion' : scmVersion
+        ])
+    }
+    
+    into('html') {
+        from ("$buildDir/src/asciidoc/html5") { include "user-guide.html" }
+        filter(org.apache.tools.ant.filters.ReplaceTokens, tokens: [
+            'appVersion': version,
+            'appMajorVersion': version.substring(0, version.lastIndexOf(".")),
+            'buildTime': new java.text.SimpleDateFormat('yyyy-MM-dd HH:mm:ss').format(new java.util.Date()),
+            'buildYear': new java.text.SimpleDateFormat('yyyy').format(new java.util.Date()),
+            'scmVersion' : scmVersion
+        ])
+    }
+    
+    into('html') {
+        from ("$buildDir/src/asciidoc/html5/tutorials") { include "tutorials.html" }
+        filter(org.apache.tools.ant.filters.ReplaceTokens, tokens: [
+            'appVersion': version,
+            'appMajorVersion': version.substring(0, version.lastIndexOf(".")),
+            'buildTime': new java.text.SimpleDateFormat('yyyy-MM-dd HH:mm:ss').format(new java.util.Date()),
+            'buildYear': new java.text.SimpleDateFormat('yyyy').format(new java.util.Date()),
+            'scmVersion' : scmVersion
+        ])
+    }
+        
+    into('html') {
+        from ("$buildDir/src/asciidoc/html5/operations") { include "operations.html" }
+        filter(org.apache.tools.ant.filters.ReplaceTokens, tokens: [
+            'appVersion': version,
+            'appMajorVersion': version.substring(0, version.lastIndexOf(".")),
+            'buildTime': new java.text.SimpleDateFormat('yyyy-MM-dd HH:mm:ss').format(new java.util.Date()),
+            'buildYear': new java.text.SimpleDateFormat('yyyy').format(new java.util.Date()),
+            'scmVersion' : scmVersion
+        ])
+        
+    }
+
+    into('pdf') {
+        from ("$buildDir/src/asciidoc/pdf") { include "user-guide.pdf" }
+    }
+
+    into('pdf') {
+        from ("$buildDir/src/asciidoc/pdf/tutorials") { include "tutorials.pdf" }
+    }
+
+    into('pdf') {
+        from ("$buildDir/src/asciidoc/pdf/operations") { include "operations.pdf" }
+    }    
+
+}
+
+
+task publishDoc {
+    dependsOn generateDocs
+	group = 'SymmetricDS'
+	description = 'Publish online documentation to SymmetricDS website'
+    doLast {
+        ant.taskdef(name: 'scp', classname: 'org.apache.tools.ant.taskdefs.optional.ssh.Scp',
+        classpath: configurations.sshAntTask.asPath)
+
+        ant.scp(
+            todir: "$publishUser:$publishPassword@$publishServer:~/www/doc/$majorMinorVersion",
+            port: "$publishPort",
+            trust: 'true',
+            verbose: 'true') {
+            fileset(dir: "$buildDir/doc") { include(name: '**/**')
+            }
+        }
+    }
+}
+
+asciidoctor { (1)
+	baseDirFollowsSourceDir()
+    sourceDir = file(symAssembleDir + '/src/asciidoc')
+    outputDir = file("$buildDir/src/asciidoc/" + docFormat)
+	outputOptions {
+        backends docFormat
+    }
+    options = [
+        doctype: 'book',
+        sourceDocumentNames: [
+        	symAssembleDir + 'generated/release-notes.ad',
+            symAssembleDir + 'user-guide.ad',
+            symAssembleDir + 'tutorials/tutorials.ad',
+            symAssembleDir + 'operations/operations.ad']
+    ]    
+    attributes \
+        'source-highlighter':'coderay',
+        'data-uri':'true'
+    
+    if (project.properties.containsKey('pro')) {
+       attributes 'pro':'true'
+    }     
+}
+
+asciidoctor.dependsOn { tasks.generateAppendixes }
+asciidoctor.dependsOn { tasks.generateReleaseNotes }

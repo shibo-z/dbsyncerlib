@@ -1,0 +1,20 @@
+apply from: symAssembleDir + '/common.gradle'
+
+    description = 'Database classes that are used by several Symmetric libraries'
+
+    dependencies {
+        api project(":symmetric-util")
+        api "net.sf.kxml:kxml2:2.3.0" // Used by ddlutils / DatabaseXmlUtil
+        api ("commons-beanutils:commons-beanutils:$commonsBeanUtilsVersion") {
+            exclude group: "commons-collections"
+            exclude group: 'commons-logging'
+        }
+        
+        compileOnly ("com.datastax.cassandra:cassandra-driver-core:3.11.1") {
+            exclude group: 'org.slf4j'
+            exclude group: 'com.google.guava'
+            exclude group: 'io.netty'
+        }
+
+        testImplementation project(path: ':symmetric-util', configuration: 'testArtifacts')
+    }

@@ -1,0 +1,124 @@
+apply from: symAssembleDir + '/common.gradle'
+apply from: symAssembleDir + '/asciidoc.gradle'
+
+    description = 'SymmetricDS Server library for JDBC client'
+
+    apply plugin: 'distribution'
+
+    dependencies {
+        api project(":symmetric-client")
+        compileOnly project(":symmetric-swagger-ui")
+        api "org.springframework:spring-jms:$springVersion"
+        api "org.springframework:spring-web:$springVersion"
+        api "org.springframework:spring-webmvc:$springVersion"
+        api "javax.xml.bind:jaxb-api:$jaxbVersion"
+        api "org.jdom:jdom2:$jdomVersion"
+        api "commons-fileupload:commons-fileupload:$commonsFileuploadVersion"
+        
+        api "io.swagger:swagger-annotations:1.6.6"
+
+        // 编译需要，运行不需要。是compileOnly的早期名字
+        provided project(":symmetric-wrapper")
+        provided "javax.jms:jms-api:1.1-rev-1"
+        
+        provided "com.h2database:h2:$h2Version"
+        provided ("mysql:mysql-connector-java:$mysqlVersion") {
+            exclude group: "com.google.protobuf"
+        }
+        provided "org.postgresql:postgresql:$postgresqlVersion"
+        provided "com.oracle.database.jdbc:ojdbc8:21.5.0.0"
+        provided "net.sourceforge.jtds:jtds:$jtdsVersion"
+        provided "com.microsoft.sqlserver:mssql-jdbc:10.2.0.jre8"
+
+        api "org.bouncycastle:bcprov-jdk15on:$bouncyCastleVersion"
+        api "org.bouncycastle:bcpkix-jdk15on:$bouncyCastleVersion"        
+                
+        compileOnly "org.codehaus.mojo:animal-sniffer-annotations:$animalSnifferVersion"
+        
+        provided "javax.servlet:javax.servlet-api:$servletVersion"
+        provided "org.eclipse.jetty:jetty-webapp:$jettyVersion"
+        provided "javax.websocket:javax.websocket-api:$websocketVersion"
+        provided ("org.eclipse.jetty.websocket:javax-websocket-server-impl:$jettyVersion") {
+           exclude group: "org.eclipse.jetty", module: "jetty-annotations"
+           exclude group: "org.eclipse.jetty", module: "jetty-jmx"
+           exclude group: "org.eclipse.jetty", module: "jetty-jndi"
+           exclude group: "org.eclipse.jetty", module: "jetty-plus"
+           exclude group: "org.ow2.asm"
+        }
+
+        provided "org.eclipse.jetty.http2:http2-server:$jettyVersion"
+        provided "org.eclipse.jetty:jetty-alpn-conscrypt-server:$jettyVersion"
+        provided "org.mortbay.jetty.alpn:alpn-boot:$alpnBootVersion"
+        compileOnly "org.eclipse.jetty.alpn:alpn-api:$alpnApiVersion"
+    
+        testImplementation project(path: ':symmetric-util', configuration: 'testArtifacts')
+        testImplementation project(path: ':symmetric-io', configuration: 'testArtifacts')
+        testImplementation project(path: ':symmetric-jdbc', configuration: 'testArtifacts')
+        testImplementation project(path: ':symmetric-core', configuration: 'testArtifacts')
+        testImplementation project(path: ':symmetric-client', configuration: 'testArtifacts')
+    }
+
+    distributions {
+        server {
+            distributionBaseName = 'symmetric-server'
+            contents {
+                from { 'COPYING' }
+                from { 'CREDITS' }
+                from { 'NOTICE' }
+                from ('src/main/deploy') {
+                    exclude 'bin/sym'
+                    exclude 'bin/symadmin'
+                    exclude 'bin/dbexport'
+                    exclude 'bin/dbimport'
+                    exclude 'bin/dbfill'
+                    exclude 'bin/jmx'
+                    exclude 'bin/dbsql'
+                    exclude 'bin/dbcompare'
+                    exclude 'bin/sym_service'
+                    exclude 'bin/setenv'
+                    exclude 'security'
+                }
+                from ('src/main/deploy') {
+                    include 'bin/sym'
+                    include 'bin/symadmin'
+                    include 'bin/dbexport'
+                    include 'bin/dbimport'
+                    include 'bin/dbfill'
+                    include 'bin/jmx'
+                    include 'bin/dbsql'
+                    include 'bin/dbcompare'
+                    include 'bin/sym_service'
+                    include 'bin/setenv'
+                    fileMode 0755
+                }
+                from ('src/main/deploy') {
+                    include 'security/*'
+                    fileMode 0600
+                    dirMode 0700
+                }
+                into('doc') { from ("$symAssembleDir/build/doc") }
+                into('lib') {
+                    from configurations.provided {
+                        exclude "*animal-sniffer*"
+                        exclude "slf4j-api*"
+                        exclude "*to-slf4j*"
+                        exclude "*over-slf4j*"
+                    }
+                    rename 'symmetric-wrapper(.*).jar', 'symmetric-wrapper.jar'
+                }
+                into('web/WEB-INF/lib') {
+                    from project(":symmetric-server").jar
+                    from configurations.runtimeClasspath.filter {  a ->
+                                (!configurations.provided.contains(a) &&
+                                !project(':symmetric-server').configurations.provided.contains(a)) ||
+                                (a.name.contains('slf4j-api') || a.name.contains('to-slf4j') || a.name.contains('over-slf4j'))
+                    }
+                }
+            }
+        }
+    }
+    
+    
+    serverDistZip.dependsOn { ':symmetric-server:jar' }
+    serverDistZip.dependsOn { ':symmetric-server:generateDocs' }
+    generateAppendixes.dependsOn(project(':symmetric-server').jar)

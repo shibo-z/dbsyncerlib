@@ -1,0 +1,665 @@
+[id="databases-compatibility",reftext="Database Compatibility"]
+=== Compatibility
+
+Each database management system has its own characteristics that results in
+feature coverage in SymmetricDS.  The following table shows which features are available
+by database.
+
+.Support by Database
+[cols="15,13,^12,^12,^12,^12,^12,^12,^12,^12,^12,^12", options="header"]
+|===
+|Database
+|Versions
+|Transaction Identifier
+|Data Capture
+|Log Mining
+|Conditional Sync
+|Update Loop Prevention
+|BLOB Sync
+|CLOB Sync
+|Transactional DDL
+|Supports Bulk Loading
+|Supports Bulk Replace
+
+|BigQuery *
+|All
+|
+|
+|
+|
+|✔
+|
+|
+|
+|
+|
+
+|DB2
+|9.5
+|
+|✔
+|
+|✔
+|✔
+|✔
+|✔
+|✔
+|
+|
+
+|DB2
+|10,11
+|✔
+|✔
+|
+|✔
+|✔
+|✔
+|✔ 
+|✔
+|
+|
+
+|DB2 for IBM i *
+|6
+|
+|✔
+|
+|✔
+|
+|✔
+|✔
+|
+|
+|
+
+|DB2 for IBM z/OS *
+|10
+|
+|✔
+|
+|✔
+|
+|✔
+|✔
+|
+|
+|
+
+|Derby
+|10.3.2.1
+|✔
+|✔
+|
+|✔
+|✔
+|✔
+|✔
+|
+|
+|
+
+|Elasticsearch *
+|7.13.2
+|
+|
+|
+|
+|✔
+|
+|
+|
+|
+|
+
+|Firebird
+|2.0
+|✔
+|✔
+|
+|✔
+|✔
+|✔
+|✔
+|
+|✔ 
+|✔
+
+|Greenplum
+|8.2.15 and above
+|
+|
+|
+|
+|✔
+|
+|
+|
+|
+|
+
+|H2
+|1.x
+|✔
+|✔
+|
+|✔
+|✔
+|✔
+|✔
+|
+|
+|
+
+|HSQLDB
+|1.8
+|✔
+|✔
+|
+|✔
+|✔
+|✔
+|✔
+|
+|
+|
+ 
+|HSQLDB
+|2.0
+|
+|✔
+|
+|✔
+|✔
+|✔
+|✔
+|
+|
+|
+
+|Informix
+|11
+|
+|✔
+|
+|✔
+|✔
+|
+|
+|
+|
+|
+
+|Ingres
+|11 and above
+|✔
+|✔
+|
+|✔
+|✔
+|✔
+|✔
+|
+|
+|
+
+|Interbase
+|9.0
+|
+|✔
+|
+|✔
+|✔
+|✔
+|✔
+|
+|
+|
+
+|MySQL
+|5.0.2 and above
+|✔
+|✔
+|✔
+|✔
+|✔
+|✔
+|✔
+|
+|✔
+|✔
+
+|MariaDB
+|5.1 and above
+|✔
+|✔
+|
+|✔
+|✔
+|✔
+|✔
+|
+|✔
+|✔
+
+|NuoDB
+|2.6 and above
+|✔
+|✔
+|
+|✔
+|✔
+|
+|✔
+|
+|
+|
+                    
+|Oracle
+|10g and above
+|✔
+|✔
+|✔ 11g and above
+|✔
+|✔
+|✔
+|✔
+|
+|✔
+|✔
+ 
+|PostgreSQL
+|8.2.5 and above
+|✔ 8.3 and above
+|✔
+|✔ 9.4 and above
+|✔
+|✔
+|✔
+|✔
+|✔
+|✔
+|✔
+
+|Redshift
+|1.0
+|
+|
+|
+|
+|✔
+|
+|
+|
+|
+|
+
+|Snowflake *
+|6.13 and above
+|
+|✔
+|✔
+|
+|
+|
+|
+|
+|✔
+|✔
+
+
+|SingleStore *
+|All
+|
+|✔
+|
+|
+|
+|✔
+|✔
+|
+|
+|
+
+|SQL Anywhere
+|9
+|✔
+|✔
+|
+|✔
+|✔
+|✔
+|✔
+|
+|
+|
+
+|SQL Server
+|2005 and above
+|✔
+|✔
+|✔ 2008 and above
+|✔
+|✔
+|✔
+|✔
+|✔
+|✔
+|✔
+ 
+|SQL Server Azure
+|Tested on 11.00.2065
+|✔
+|✔
+|
+|✔
+|✔
+|✔
+|
+|
+|
+|
+ 
+|SQLite
+|3.x
+|
+|✔
+|
+|✔
+|✔
+|✔
+|✔
+|
+|✔ 
+|✔
+ 
+|Sybase ASE
+|12.5
+|✔
+|✔
+|
+|✔
+|✔
+|✔
+|✔
+|
+|✔ 
+|✔
+ 
+|Teradata
+|15.10 and above
+|✔
+|
+|
+|✔
+|
+|
+|
+|
+|
+|
+   
+|Tibero
+|6 and above
+|✔
+|✔
+|
+|✔
+|✔
+|✔
+|✔
+|
+|
+|
+                   
+|===
+
+Database *:: Asterisk (*) next to database indicates the database support is available in https://www.jumpmind.com/products/symmetricds/symmetricds-overview[SymmetricDS Pro] only.
+
+Transaction Identifier:: A transaction identifier is recorded in the SYM_DATA table along with changes, which allows changes in the same transaction to be grouped
+together for commit within a batch.
+
+Data Capture:: Changes to tables can be captured using database triggers.
+
+Log Mining:: Changes to tables can be captured using log mining.  This feature is available in https://www.jumpmind.com/products/symmetricds/symmetricds-overview[SymmetricDS Pro] only
+
+Conditional Sync:: Conditions can be specified on SYM_TRIGGER, which are compiled into the trigger to decide if a change should be captured.
+
+Update Loop Prevention:: The remote node is recorded on data that is captured, so the system can prevent the changes from being sent back to the same node. 
+
+BLOB Sync:: Binary large object data can be captured or streamed from the database.
+
+CLOB Sync:: Character large object data can be captured or streamed from the database.
+
+=== Catalog and Schema
+
+A relational database may be divided into catalogs that contain sub-databases called schemas, which contain tables.
+Each database management system can implement the concepts of catalog and schema differently or not at all.
+When locating a table, SymmetricDS uses the default catalog and schema unless the user specifies one.
+
+.Catalog and Schema Support by Database
+|===
+|Database |Version |Catalog Support |Catalog Default |Schema Support |Schema Default
+
+|DB2
+|
+|
+|
+|✔
+|values current schema
+
+|Derby
+|
+|
+|
+|✔
+|values current schema   
+ 
+|Elasticsearch
+|
+|
+|
+|
+|   
+ 
+|Firebird
+|
+|
+|
+|
+|
+
+|Greenplum
+|
+|
+|
+|✔
+|select current_schema()                   
+
+|H2
+|
+|✔
+|select database()
+|✔
+|select schema()
+
+|HSQLDB
+|1.0
+|
+|
+|
+|
+ 
+|HSQLDB
+|2.0
+|✔
+|select value from information_schema.system_sessioninfo where key = 'CURRENT SCHEMA'
+|✔
+|select value from information_schema.system_sessioninfo where key = 'CURRENT SCHEMA'
+
+|Informix
+|
+|
+|
+|✔
+|select trim(user) from sysmaster:sysdual
+
+|Ingres
+|
+|
+|
+|✔
+|select dbmsinfo('username')
+
+ 
+|Interbase
+|
+|
+|
+|
+|
+
+|MySQL
+| 
+|✔
+|select database()
+|
+| 
+ 
+|MariaDB
+|
+|✔
+|select database()
+|
+|
+
+|NuoDB
+|
+|
+|
+|✔
+|select current_schema from system.dual
+
+|Oracle
+| 
+|
+| 
+|✔
+|select sys_context('USERENV', 'CURRENT_SCHEMA') from dual
+
+|PostgreSQL
+|
+|
+|
+|✔
+|select current_schema()                   
+
+|Snowflake
+|
+|✔
+|select current_database()
+|✔
+|select current_schema()
+
+|SingleStore
+| 
+|✔
+|select database()
+|
+|
+
+|SQL Anywhere
+|
+|✔
+|select db_name()
+|✔
+|select user_name()
+ 
+|SQL Server
+|2000
+|✔
+|select db_name()
+|✔
+|select 'dbo'
+
+|SQL Server
+|2005+
+|✔
+|select db_name()
+|✔
+|select schema_name()
+
+|SQL Server
+|
+|✔
+|select db_name()
+|✔
+|select schema_name()
+ 
+|SQL Server Azure
+|
+|✔
+|select db_name()
+|✔
+|select schema_name()
+ 
+|SQLite
+|
+|
+|
+|
+|      
+
+|Sybase ASE
+|
+|✔
+|select db_name()
+|✔
+|select user_name()
+ 
+|Redshift
+|
+|
+|
+|✔
+|select current_schema()
+
+
+|Tibero
+| 
+|
+| 
+|✔
+|select sys_context('USERENV', 'CURRENT_SCHEMA') from dual
+
+|===
+include::{includedir}/appendix/bigquery.ad[]
+include::{includedir}/appendix/db2.ad[]
+include::{includedir}/appendix/derby.ad[]
+include::{includedir}/appendix/elasticsearch.ad[]
+include::{includedir}/appendix/firebird.ad[]
+include::{includedir}/appendix/greenplum.ad[]
+include::{includedir}/appendix/h2.ad[]
+include::{includedir}/appendix/hbase.ad[]
+include::{includedir}/appendix/hsqldb.ad[]
+include::{includedir}/appendix/ignite.ad[]
+include::{includedir}/appendix/informix.ad[]
+include::{includedir}/appendix/ingres.ad[]
+include::{includedir}/appendix/interbase.ad[]
+include::{includedir}/appendix/kafka.ad[]
+include::{includedir}/appendix/mariadb.ad[]
+include::{includedir}/appendix/mongodb.ad[]
+include::{includedir}/appendix/mysql.ad[]
+include::{includedir}/appendix/opensearch.ad[]
+include::{includedir}/appendix/oracle.ad[]
+include::{includedir}/appendix/postgresql.ad[]
+include::{includedir}/appendix/redshift.ad[]
+include::{includedir}/appendix/singlestore.ad[]
+include::{includedir}/appendix/snowflake.ad[]
+include::{includedir}/appendix/sqlite.ad[]
+include::{includedir}/appendix/mssqlserver.ad[]
+include::{includedir}/appendix/sybase-ase.ad[]
+include::{includedir}/appendix/sybase-sqlanywhere.ad[]
+include::{includedir}/appendix/S3.ad[]
+include::{includedir}/appendix/teradata.ad[]
+include::{includedir}/appendix/tibero.ad[]

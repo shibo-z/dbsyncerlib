@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="GradleMigrationSettings" migrationVersion="1" />
+  <component name="GradleSettings">
+    <option name="linkedExternalProjectsSettings">
+      <GradleProjectSettings>
+        <option name="distributionType" value="DEFAULT_WRAPPED" />
+        <option name="externalProjectPath" value="$PROJECT_DIR$" />
+        <option name="gradleHome" value="D:/gradle-5.6.4" />
+        <option name="gradleJvm" value="#JAVA_HOME" />
+        <option name="modules">
+          <set>
+            <option value="$PROJECT_DIR$" />
+            <option value="$PROJECT_DIR$/../symmetric-client" />
+            <option value="$PROJECT_DIR$/../symmetric-core" />
+            <option value="$PROJECT_DIR$/../symmetric-csv" />
+            <option value="$PROJECT_DIR$/../symmetric-db" />
+            <option value="$PROJECT_DIR$/../symmetric-io" />
+            <option value="$PROJECT_DIR$/../symmetric-jdbc" />
+            <option value="$PROJECT_DIR$/../symmetric-server" />
+            <option value="$PROJECT_DIR$/../symmetric-swagger-ui" />
+            <option value="$PROJECT_DIR$/../symmetric-util" />
+            <option value="$PROJECT_DIR$/../symmetric-wrapper" />
+          </set>
+        </option>
+      </GradleProjectSettings>
+    </option>
+  </component>
+</project>

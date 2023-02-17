@@ -1,0 +1,38 @@
+
+=== MariaDB
+
+Use `symadmin module install mariadb` to install driver files, or copy your own files into the `lib` sub-directory.
+
+See MySQL notes.  You can use either the MySQL or MariaDB driver for this dialect.
+
+.Supported Data Types
+|===
+|Data Type|Supported?
+
+|TinyInt, SmallInt, MediumInt, Int, BigInt|Yes
+|Decimal, Numeric|Yes
+|Float, Double|Yes
+|Bit|Yes
+|Char, Varchar|Yes
+|Binary, VarBinary|Yes
+|TinyBlob|No
+|Blob, MediumBlob, Longblob|Yes
+|TinyText, Text, MediumText, LongText|Yes
+|Enum|No
+|Set|No
+|Date, Time, DateTime, TimeStamp, Year|Yes
+|Point, LineString, Polygon, MultiPoint, MultiLinestring, MultiPolygon, GeometryCollection, Geometry| No
+|===
+
+==== Bulk Loading
+When registering a Maria database with SymmetricDS, bulk loading will be checked by default.
+
+image::images/appendix/mysql-enable-bulk-loading.png[]
+
+To succesfully bulk load, once your MySQL database is registered with SymmetricDS, go to the top of the screen and select the MySQL node you want to bulk load from the drop down list of your nodes.
+
+Then, go to the Manage tab, and go to Startup Parameters and set mysql.bulk.load.local to true, and restart SymmetricDS.
+
+image::images/appendix/mysql-bulk-load-local-true.png[]
+
+After completing this step, your Maria database should be configured to bulk load. 
